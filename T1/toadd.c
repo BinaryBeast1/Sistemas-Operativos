@@ -101,21 +101,17 @@ int main() {
         int status;
         pid_t dead_pid;
         
-        // --- 1. REVISAR PROCESOS MUERTOS (Y APLICAR LOGICA DEL BONUS) ---
         while ((dead_pid = waitpid(-1, &status, WNOHANG)) > 0) {
             for (int i = 0; i < MAX_PROCESSES; i++) {
                 if (process_table[i].active && process_table[i].pid == dead_pid) {
                     
                     if (process_table[i].explicit_stop) {
-                        // Si nosotros lo matamos, simplemente se detiene
                         strcpy(process_table[i].state, "STOPPED");
                     } 
                     else if (WIFEXITED(status) && WEXITSTATUS(status) == 0) {
-                        // Terminó exitosamente por su cuenta
                         strcpy(process_table[i].state, "ZOMBIE");
                     } 
                     else {
-                        // Muerte inesperada: ¡Aplicamos el Restart!
                         if (process_table[i].restarts < MAX_RESTARTS) {
                             process_table[i].restarts++;
                             
@@ -126,13 +122,11 @@ int main() {
                                 execvp(process_table[i].bin_path, args);
                                 exit(EXIT_FAILURE); 
                             } else if (new_pid > 0) {
-                                // Actualizamos el PID pero MANTENEMOS EL MISMO IID
                                 process_table[i].pid = new_pid;
                                 strcpy(process_table[i].state, "RUNNING");
                                 process_table[i].start_time = time(NULL);
                             }
                         } else {
-                            // Se acabaron los intentos
                             strcpy(process_table[i].state, "FAILED");
                         }
                     }
@@ -141,7 +135,6 @@ int main() {
             }
         }
 
-        // --- 2. ESCUCHAR COMANDOS DEL CLI ---
         int ret = poll(&pfd, 1, 500); 
         
         if (ret > 0 && (pfd.revents & POLLIN)) {
@@ -170,7 +163,6 @@ int main() {
                                 strcpy(process_table[i].state, "RUNNING");
                                 process_table[i].start_time = time(NULL);
                                 
-                                // Inicializar variables del bonus
                                 process_table[i].restarts = 0;
                                 process_table[i].explicit_stop = false;
                                 
@@ -196,7 +188,6 @@ int main() {
                     if (idx != -1) {
                         char uptime[20];
                         get_uptime(process_table[idx].start_time, uptime, sizeof(uptime));
-                        // Agregamos el número de RESTARTS a la salida
                         snprintf(res.payload, sizeof(res.payload), 
                                  "IID: %d\nPID: %d\nBINARY: %s\nSTATE: %s\nUPTIME: %s\nRESTARTS: %d\n",
                                  process_table[idx].iid, process_table[idx].pid, process_table[idx].bin_path, 
@@ -224,7 +215,6 @@ int main() {
                 else if (req.type == CMD_STOP || req.type == CMD_KILL) {
                     int idx = find_process_by_iid(req.iid);
                     if (idx != -1) {
-                        // Marcamos que nosotros lo matamos para no reiniciarlo
                         process_table[idx].explicit_stop = true; 
                         
                         pid_t target_pid = process_table[idx].pid;

@@ -23,7 +23,6 @@ El simulador se ejecuta por línea de comandos pasando tres argumentos:
 ./memsim 1024 FIRST_FIT traza1.txt
 ```
 
-También puedes probar las otras trazas:
 ```bash
 ./memsim 1000 BEST_FIT traza_compact.txt
 ./memsim 1000 WORST_FIT traza_policies.txt
